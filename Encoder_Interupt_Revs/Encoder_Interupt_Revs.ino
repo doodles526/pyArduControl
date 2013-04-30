@@ -1,120 +1,56 @@
- #define encoder0PinA 2
+//PIN's definition
+#define encoder0PinA  2
+#define encoder0PinB  3
 
-#define encoder0PinB 4
 
 volatile int encoder0Pos = 0;
-int revolutions0 = 0;
+volatile boolean PastA = 0;
+volatile boolean PastB = 0;
+int revolutions = 0;
 
-void setup() {
+void setup() 
+{
 
-  pinMode(encoder0PinA, INPUT); 
+  pinMode(encoder0PinA, INPUT);
+  //turn on pullup resistor
+  digitalWrite(encoder0PinA, HIGH); //ONLY FOR SOME ENCODER(MAGNETIC)!!!! 
   pinMode(encoder0PinB, INPUT); 
-  pinMode(3, OUTPUT);
+  //turn on pullup resistor
+  digitalWrite(encoder0PinB, HIGH); //ONLY FOR SOME ENCODER(MAGNETIC)!!!! 
+  PastA = (boolean)digitalRead(encoder0PinA); //initial value of channel A;
+  PastB = (boolean)digitalRead(encoder0PinB); //and channel B
 
-  analogWrite(3, 500);
-// encoder pin on interrupt 0 (pin 2)
-
-  attachInterrupt(0, doEncoderA, CHANGE);
-
-// encoder pin on interrupt 1 (pin 3)
-
-  attachInterrupt(1, doEncoderB, CHANGE);  
-
-  Serial.begin (9600);
-
+//To speed up even more, you may define manually the ISRs
+// encoder A channel on interrupt 0 (arduino's pin 2)
+  attachInterrupt(0, doEncoderA, RISING);
+// encoder B channel pin on interrupt 1 (arduino's pin 3)
+  attachInterrupt(1, doEncoderB, CHANGE); 
+  Serial.begin(9600);
 }
 
-void loop(){ //Do stuff here 
-  Serial.print(revolutions0, DEC);
-  Serial.print(" ");
-  Serial.print(encoder0Pos, DEC);
-  Serial.print("; ")
+
+void loop()
+{  
+ //your staff....ENJOY! :D
+ Serial.print(revolutions, DEC);
+ Serial.print(" ");
+ Serial.print(encoder0Pos, DEC);
+ Serial.println("; ");
+ 
 }
 
-void doEncoderA(){
-
-  // look for a low-to-high on channel A
-  if (digitalRead(encoder0PinA) == HIGH) { 
-
-    // check channel B to see which way encoder is turning
-    if (digitalRead(encoder0PinB) == LOW) {  
-      encoder0Pos = encoder0Pos + 1;         // CW
-      if(encoder0Pos/1865 != 0)  {
-        revolutions0 += encoder0Pos / 1865;
-        encoder0Pos = encoder0Pos % 1865;
-      }
-    } 
-    else {
-      if(encoder0Pos/-1865 != 0)  {
-        revolutions0 -= encoder0Pos / -1865;
-        encoder0Pos = encoder0Pos/-1865;
-      }
-      encoder0Pos = encoder0Pos - 1;         // CCW
-    }
-  }
-
-  else   // must be a high-to-low edge on channel A                                       
-  { 
-    // check channel B to see which way encoder is turning  
-    if (digitalRead(encoder0PinB) == HIGH) {   
-      if(encoder0Pos/1865 != 0)  {
-        revolutions0 += encoder0Pos / 1865;
-        encoder0Pos = encoder0Pos % 1865;
-      }
-      encoder0Pos = encoder0Pos + 1;          // CW
-    } 
-    else {
-      if(encoder0Pos/-1865 != 0)  {
-        revolutions0 -= encoder0Pos / -1865;
-        encoder0Pos = encoder0Pos % -1865;
-      }
-      encoder0Pos = encoder0Pos - 1;          // CCW
-    }
-  }
-  // use for debugging - remember to comment out
-
+//you may easily modify the code  get quadrature..
+//..but be sure this whouldn't let Arduino back! 
+void doEncoderA()
+{
+     PastB ? encoder0Pos--:  encoder0Pos++;
+     if (encoder0Pos > 464 || encoder0Pos < -464)  {
+       revolutions += encoder0Pos / 464;
+       encoder0Pos %= 464;
+     }
 }
 
-void doEncoderB(){
-
-  // look for a low-to-high on channel B
-  if (digitalRead(encoder0PinB) == HIGH) {   
-
-   // check channel A to see which way encoder is turning
-    if (digitalRead(encoder0PinA) == HIGH) {  
-      if(encoder0Pos/1865 != 0)  {
-        revolutions0 += encoder0Pos / 1865;
-        encoder0Pos = encoder0Pos % 1865;
-      }  
-      encoder0Pos = encoder0Pos + 1;         // CW
-    } 
-    else {
-      if(encoder0Pos/-1865 != 0)  {
-        revolutions0 -= encoder0Pos / -1865;
-        encoder0Pos = encoder0Pos % -1865;
-      }
-      encoder0Pos = encoder0Pos - 1;         // CCW
-    }
-  }
-
-  // Look for a high-to-low on channel B
-
-  else { 
-    // check channel B to see which way encoder is turning  
-    if (digitalRead(encoder0PinA) == LOW) {   
-      if(encoder0Pos/1865 != 0)  {
-        revolutions0 += encoder0Pos / 1865;
-        encoder0Pos = encoder0Pos % 1865;
-      }      
-      encoder0Pos = encoder0Pos + 1;          // CW
-    } 
-    else {
-      if(encoder0Pos/-1865 != 0)  {
-        revolutions0 -= encoder0Pos / -1865;
-        encoder0Pos = encoder0Pos % -1865;
-      }
-      encoder0Pos = encoder0Pos - 1;          // CCW
-    }
-  }
-
-} 
+void doEncoderB()
+{
+     PastB = !PastB; 
+}
