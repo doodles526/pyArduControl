@@ -3,7 +3,7 @@
 #define encoder0PinB 4
 
 volatile int encoder0Pos = 0;
-int revolutions = 0;
+int revolutions0 = 0;
 
 void setup() {
 
@@ -25,9 +25,10 @@ void setup() {
 }
 
 void loop(){ //Do stuff here 
-  Serial.print(revolutions, DEC);
+  Serial.print(revolutions0, DEC);
   Serial.print(" ");
-  Serial.println(encoder0Pos, DEC); 
+  Serial.print(encoder0Pos, DEC);
+  Serial.print("; ")
 }
 
 void doEncoderA(){
@@ -39,13 +40,13 @@ void doEncoderA(){
     if (digitalRead(encoder0PinB) == LOW) {  
       encoder0Pos = encoder0Pos + 1;         // CW
       if(encoder0Pos/1865 != 0)  {
-        revolutions += encoder0Pos / 1865;
+        revolutions0 += encoder0Pos / 1865;
         encoder0Pos = encoder0Pos % 1865;
       }
     } 
     else {
       if(encoder0Pos/-1865 != 0)  {
-        revolutions -= encoder0Pos / -1865;
+        revolutions0 -= encoder0Pos / -1865;
         encoder0Pos = encoder0Pos/-1865;
       }
       encoder0Pos = encoder0Pos - 1;         // CCW
@@ -57,14 +58,14 @@ void doEncoderA(){
     // check channel B to see which way encoder is turning  
     if (digitalRead(encoder0PinB) == HIGH) {   
       if(encoder0Pos/1865 != 0)  {
-        revolutions += encoder0Pos / 1865;
+        revolutions0 += encoder0Pos / 1865;
         encoder0Pos = encoder0Pos % 1865;
       }
       encoder0Pos = encoder0Pos + 1;          // CW
     } 
     else {
       if(encoder0Pos/-1865 != 0)  {
-        revolutions -= encoder0Pos / -1865;
+        revolutions0 -= encoder0Pos / -1865;
         encoder0Pos = encoder0Pos % -1865;
       }
       encoder0Pos = encoder0Pos - 1;          // CCW
@@ -82,14 +83,14 @@ void doEncoderB(){
    // check channel A to see which way encoder is turning
     if (digitalRead(encoder0PinA) == HIGH) {  
       if(encoder0Pos/1865 != 0)  {
-        revolutions += encoder0Pos / 1865;
+        revolutions0 += encoder0Pos / 1865;
         encoder0Pos = encoder0Pos % 1865;
       }  
       encoder0Pos = encoder0Pos + 1;         // CW
     } 
     else {
       if(encoder0Pos/-1865 != 0)  {
-        revolutions -= encoder0Pos / -1865;
+        revolutions0 -= encoder0Pos / -1865;
         encoder0Pos = encoder0Pos % -1865;
       }
       encoder0Pos = encoder0Pos - 1;         // CCW
@@ -102,14 +103,14 @@ void doEncoderB(){
     // check channel B to see which way encoder is turning  
     if (digitalRead(encoder0PinA) == LOW) {   
       if(encoder0Pos/1865 != 0)  {
-        revolutions += encoder0Pos / 1865;
+        revolutions0 += encoder0Pos / 1865;
         encoder0Pos = encoder0Pos % 1865;
       }      
       encoder0Pos = encoder0Pos + 1;          // CW
     } 
     else {
       if(encoder0Pos/-1865 != 0)  {
-        revolutions -= encoder0Pos / -1865;
+        revolutions0 -= encoder0Pos / -1865;
         encoder0Pos = encoder0Pos % -1865;
       }
       encoder0Pos = encoder0Pos - 1;          // CCW
