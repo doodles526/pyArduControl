@@ -8,6 +8,9 @@ volatile boolean PastA = 0;
 volatile boolean PastB = 0;
 int revolutions = 0;
 
+int lastEncode = 1;
+int lastRevs = 1;
+
 void setup() 
 {
 
@@ -32,10 +35,14 @@ void setup()
 void loop()
 {  
  //your staff....ENJOY! :D
- Serial.print(revolutions, DEC);
- Serial.print(" ");
- Serial.print(encoder0Pos, DEC);
- Serial.println("; ");
+ if(revolutions != lastRevs || encoder0Pos != lastEncode)  {
+   Serial.print(revolutions, DEC);
+   Serial.print(" ");
+   Serial.print(encoder0Pos, DEC);
+   Serial.println("; ");
+   lastRevs = revolutions;
+   lastEncode= encoder0Pos;
+ }
  
 }
 
@@ -48,6 +55,18 @@ void doEncoderA()
        revolutions += encoder0Pos / 464;
        encoder0Pos %= 464;
      }
+     
+     if (revolutions > 0 && encoder0Pos < 0 )  {
+       revolutions --;
+       encoder0Pos = 464 - encoder0Pos;
+     }
+     else if (revolutions < 0 && encoder0Pos > 0)  {
+       revolutions ++;
+       encoder0Pos = -464 - encoder0Pos;
+     }
+       
+     
+     
 }
 
 void doEncoderB()

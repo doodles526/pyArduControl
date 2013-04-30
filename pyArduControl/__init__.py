@@ -1,6 +1,6 @@
 import pyfirmata
 from pyfirmata import Arduino, util
-
+import serial
 import threading
 
 class ArduControl():
@@ -30,7 +30,6 @@ class ArduControl():
         self.d_gain = .01
 
         if encoder_board:
-            import serial
             self.encoder = serial.Serial(encoder_board)
 
     def motorSpeed(self, motorA=None, motorB=None):
@@ -96,3 +95,16 @@ class ArduControl():
             vel = p_vel
             self.motorSpeed(motorB=vel)
         self._motorB_newpos.clear()
+
+
+class Encoder(threading.Thread):
+    
+    def __init__(self, serial_ext, clicks_per_rev):
+        threading.Thread.__init__(self)
+        self.revolutions = 0
+        self.clicks = 0
+        self.click_per_rev = 0
+        self.ser = serial.Serial(serial_ext)
+        self.numMotors
+
+    def 
