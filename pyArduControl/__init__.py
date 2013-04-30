@@ -3,6 +3,8 @@ from pyfirmata import Arduino, util
 import serial
 import threading
 
+poslock = threading.Lock()
+
 class ArduControl():
 
     def __init__(self, extension, control_board=None, encoder_board=None):
@@ -17,8 +19,8 @@ class ArduControl():
         self._motorA_hold = threading.Event()
         self._motorB_hold = threading.Event() 
 
-        self.motorA_newpos = threading.Event()
-        self.motorB_newpos = threading.Event()
+        self._motorA_newpos = threading.Event()
+        self._motorB_newpos = threading.Event()
 
         self.motorA_speed = self.board.get_pin("d:3:p")
         self.motorA_direction = self.board.get_pin("d:12:o")
@@ -26,8 +28,12 @@ class ArduControl():
         self.motorB_speed = self.board.get_pin("d:11:p")
         self.motorB_direction = self.board.get_pin("d:13:0")
 
+ 
+
         self.p_gain = .01
-        self.d_gain = .01
+        self.d_gain = .2
+
+        self.encoder = encoder_board
 
         if encoder_board:
             self.encoder = serial.Serial(encoder_board)
@@ -77,19 +83,25 @@ class ArduControl():
         Worker function for thread gotoPosition
         """
        
-        while not self._motorA_newpos.isSet():
-            self._motorA_hold.wait()
-            self.motorDirection(motorA=(goto_pos-phy_pos > 0))
-            p_vel = self.p_gain * (abs((goto_pos[0]*1856 + goto_pos[1]) - (phy_pos[0]*1856 + phy_pos[1])))
+        #while not self._motorA_newpos.isSet():
+        while True:
+            #self._motorA_hold.wait()
+            poslock.acquire()
+            phy_pos = self.encoder.positions[0]
+            poslock.release()
+            self.motorDirection(motorA=int(goto_pos < phy_pos))
+            p_vel = self.p_gain * (abs((goto_pos[0]*464 + goto_pos[1]) - (phy_pos[0]*464 + phy_pos[1])))
             d_vel = self.d_gain * self.motorA_speed.read()
-            vel = p_vel
+            vel = abs(p_vel - d_vel)
+            if vel > 1:
+                vel = 1
             self.motorSpeed(motorA=vel)
         self._motorA_newpos.clear()
 
     def motorBWorker(self, goto_pos):
         while not self._motorB_newpos.isSet():
             self._motorB_hold.wait()
-            self.motorDirection(motorA=(goto_pos-phys_pos > 0))
+            self.motorDirection(motorA=int(goto_pos-phys_pos > 0))
             p_vel = self.p_gain * (abs((goto_pos[0]*1856 + goto_pos[1]) - (phy_pos[0]*1856 + phy_pos[1])))
             d_vel = self.d_gain * self.motorB_speed.read()
             vel = p_vel
@@ -105,6 +117,18 @@ class Encoder(threading.Thread):
         self.clicks = 0
         self.click_per_rev = 0
         self.ser = serial.Serial(serial_ext)
-        self.numMotors
+        self.numMotors = len(self.ser.readline().split(';'))
+        self.positions = list()
 
-    def 
+    def run(self):
+        while True:
+            data = self.ser.readline()
+            data = data.split("\n")[0]
+            data = data.split(';')
+            temp_positions = list()
+
+            for motors in data:
+                temp_positions.append((int(motors.split(',')[0]), int(motors.split(',')[1])))
+            poslock.acquire()
+            self.positions = temp_positions
+            poslock.release()

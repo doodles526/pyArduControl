@@ -37,9 +37,9 @@ void loop()
  //your staff....ENJOY! :D
  if(revolutions != lastRevs || encoder0Pos != lastEncode)  {
    Serial.print(revolutions, DEC);
-   Serial.print(" ");
+   Serial.print(",");
    Serial.print(encoder0Pos, DEC);
-   Serial.println("; ");
+   Serial.print(";\n");
    lastRevs = revolutions;
    lastEncode= encoder0Pos;
  }
