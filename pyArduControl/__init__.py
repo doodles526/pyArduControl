@@ -1,9 +1,9 @@
 import pyfirmata
 from pyfirmata import Arduino, util
 import serial
-import threading
-
-poslock = threading.Lock()
+from multiprocessing import Process
+from multiprocessing.sharedctypes import Array
+from ctypes import Structure, c_int
 
 class ArduControl():
 
@@ -13,14 +13,8 @@ class ArduControl():
         else:
             self.board = pyfirmata.Arduino(extension)
 
-        self._motorA_pos_thread = threading.Thread()
-        self._motorB_pos_thread = threading.Thread()
-
-        self._motorA_hold = threading.Event()
-        self._motorB_hold = threading.Event() 
-
-        self._motorA_newpos = threading.Event()
-        self._motorB_newpos = threading.Event()
+        self._motorA_pos_process = multiprocessing.Process()
+        self._motorB_pos_process = multiprocessing.Process()
 
         self.motorA_speed = self.board.get_pin("d:3:p")
         self.motorA_direction = self.board.get_pin("d:12:o")
@@ -36,7 +30,7 @@ class ArduControl():
         self.encoder = encoder_board
 
         if encoder_board:
-            self.encoder = serial.Serial(encoder_board)
+            self.encoder = encoder_board
 
     def motorSpeed(self, motorA=None, motorB=None):
         if motorA is not None:
@@ -67,10 +61,10 @@ class ArduControl():
         """
 
         if motorA:
-            self._motorA_newpos.set()
+            self._motorA_pos_process.terminate()
             while not self._motorA_pos_thread.isAlive():
                 pass
-            self._motorA_pos_thread(motorAWorker, (motorA, ))
+            self._motorA_pos_process(motorAWorker, (motorA, ))
         if motorB:
             self._motorB_newpos.set()
             while not self._motorB_pos_thread.isAlive():
@@ -86,9 +80,7 @@ class ArduControl():
         #while not self._motorA_newpos.isSet():
         while True:
             #self._motorA_hold.wait()
-            poslock.acquire()
-            phy_pos = self.encoder.positions[0]
-            poslock.release()
+            phy_pos = self.encoder.getPositions()[0]
             self.motorDirection(motorA=int(goto_pos < phy_pos))
             p_vel = self.p_gain * (abs((goto_pos[0]*464 + goto_pos[1]) - (phy_pos[0]*464 + phy_pos[1])))
             d_vel = self.d_gain * self.motorA_speed.read()
@@ -108,27 +100,41 @@ class ArduControl():
             self.motorSpeed(motorB=vel)
         self._motorB_newpos.clear()
 
+class Position(Structure):
+    """
+    Setup process-safe position list of tuples
+    """
+    _fields_ = [('revs', c_int), ('counts', c_int)]
 
-class Encoder(threading.Thread):
+
+class Encoder(Process):
     
     def __init__(self, serial_ext, clicks_per_rev):
-        threading.Thread.__init__(self)
+        Process.__init__(self)
         self.revolutions = 0
         self.clicks = 0
         self.click_per_rev = 0
         self.ser = serial.Serial(serial_ext)
         self.numMotors = len(self.ser.readline().split(';'))
-        self.positions = list()
+        self.positions = Array(Position, [(i, i) for i in range(self.numMotors)])
 
     def run(self):
         while True:
-            data = self.ser.readline()
-            data = data.split("\n")[0]
-            data = data.split(';')
+            motors = self.ser.readline()
+            motors = motors.split("\n")[0]
+            motors = motors.split(';')
             temp_positions = list()
+            
+            positions_counter = 0
+            for motor in motors:
+                self.positions[positions_counter].revs = int(motor.split(',')[0])
+                self.positions[positions_counter].counts = int(motor.split(',')[1])
+                positions_counter += 1
 
-            for motors in data:
-                temp_positions.append((int(motors.split(',')[0]), int(motors.split(',')[1])))
-            poslock.acquire()
-            self.positions = temp_positions
-            poslock.release()
+    def getPositions(self):
+        """
+        API function so the user doesn't have to
+        deal with weird ctype_arrays
+        """
+
+        return [(motor.revs, motor.counts) for motor in self.positions]
