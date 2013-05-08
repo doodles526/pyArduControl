@@ -13,8 +13,8 @@ class ArduControl():
         else:
             self.board = pyfirmata.Arduino(extension)
 
-        self._motorA_pos_process = multiprocessing.Process()
-        self._motorB_pos_process = multiprocessing.Process()
+        self._motorA_pos_process = Process()
+        self._motorB_pos_process = Process()
 
         self.motorA_speed = self.board.get_pin("d:3:p")
         self.motorA_direction = self.board.get_pin("d:12:o")
@@ -62,9 +62,9 @@ class ArduControl():
 
         if motorA:
             self._motorA_pos_process.terminate()
-            while not self._motorA_pos_thread.isAlive():
+            while self._motorA_pos_thread.isAlive():
                 pass
-            self._motorA_pos_process(motorAWorker, (motorA, ))
+            self._motorA_pos_process = multiprocessing.Process(target=motorAWorker, args=(motorA,))
         if motorB:
             self._motorB_newpos.set()
             while not self._motorB_pos_thread.isAlive():
@@ -77,9 +77,7 @@ class ArduControl():
         Worker function for thread gotoPosition
         """
        
-        #while not self._motorA_newpos.isSet():
         while True:
-            #self._motorA_hold.wait()
             phy_pos = self.encoder.getPositions()[0]
             self.motorDirection(motorA=int(goto_pos < phy_pos))
             p_vel = self.p_gain * (abs((goto_pos[0]*464 + goto_pos[1]) - (phy_pos[0]*464 + phy_pos[1])))
