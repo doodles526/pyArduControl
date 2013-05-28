@@ -14,10 +14,7 @@ class ArduControl():
     over USB serial connection.
     """
     def __init__(self, extension, encoder_board=None):
-        if control_board is not None:
-            self.board = control_board
-        else:
-            self.board = pyfirmata.Arduino(extension)
+        self.board = pyfirmata.Arduino(extension)
 
         self._motorA_pos_process = None
         self._motorB_pos_process = None
