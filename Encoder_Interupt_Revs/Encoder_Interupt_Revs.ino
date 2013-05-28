@@ -10,16 +10,17 @@ int revolutions = 0;
 
 int lastEncode = 1;
 int lastRevs = 1;
+volatile unsigned int timeout = 0;
 
 void setup() 
 {
 
   pinMode(encoder0PinA, INPUT);
   //turn on pullup resistor
-  digitalWrite(encoder0PinA, HIGH); //ONLY FOR SOME ENCODER(MAGNETIC)!!!! 
+  //digitalWrite(encoder0PinA, HIGH); //ONLY FOR SOME ENCODER(MAGNETIC)!!!! 
   pinMode(encoder0PinB, INPUT); 
   //turn on pullup resistor
-  digitalWrite(encoder0PinB, HIGH); //ONLY FOR SOME ENCODER(MAGNETIC)!!!! 
+  //digitalWrite(encoder0PinB, HIGH); //ONLY FOR SOME ENCODER(MAGNETIC)!!!! 
   PastA = (boolean)digitalRead(encoder0PinA); //initial value of channel A;
   PastB = (boolean)digitalRead(encoder0PinB); //and channel B
 
@@ -35,14 +36,16 @@ void setup()
 void loop()
 {  
  //your staff....ENJOY! :D
- if(revolutions != lastRevs || encoder0Pos != lastEncode)  {
-   Serial.print(revolutions, DEC);
-   Serial.print(",");
-   Serial.print(encoder0Pos, DEC);
-   Serial.print(";\n");
+ if(revolutions != lastRevs || encoder0Pos != lastEncode || timeout > 60000)  {
+   timeout = 0;
    lastRevs = revolutions;
    lastEncode= encoder0Pos;
+   Serial.print(String(String(revolutions, DEC) + String(",") + String(encoder0Pos, DEC) + String(";\n")));
+   //Serial.print(",");
+   //Serial.print(encoder0Pos, DEC);
+   //Serial.print(";\n");
  }
+ timeout++;
  
 }
 
