@@ -9,7 +9,10 @@ import re
 
 
 class ArduControl():
-
+    """
+    Python library/API for controlling arduino motorcontrollers
+    over USB serial connection.
+    """
     def __init__(self, extension, control_board=None, encoder_board=None):
         if control_board is not None:
             self.board = control_board
@@ -53,6 +56,9 @@ class ArduControl():
             self.encoder = encoder_board
 
     def fire(self, triggerA=None, triggerB=None):
+        """
+        Master function and process starter for firing servos
+        """
         if triggerA is not None:
             if self._triggerA_process:
                 self._triggerA_process.terminate()
@@ -71,16 +77,27 @@ class ArduControl():
             self._triggerB_process.start()
 
     def triggerAWorker(self, num_fire):
+        """
+        Worker function for fire.  This is specialized for crossfire, and
+        should probably be abandoned for production.  But is fine for now.
+        """
         self.triggerA.write(0)
         time.sleep(num_fire * self.trigger_time_constant)
         self.triggerA.write(25)
 
     def triggerBWorker(self, num_fire):
+        """
+        Worker function for fire.  This is specialized for crossfire, and
+        should probably be abandoned for production.  But is fine for now.
+        """
         self.triggerB.write(180)
         time.sleep(num_fire * self.trigger_time_constant)
         self.triggerB.write(155)
 
     def brake(self, motorA=None, motorB=None):
+        """
+        Uses braking functionality given in some arduino motor drivers
+        """
         if motorA is not None:
             self.motorA_brake.write(1)
 
@@ -88,6 +105,9 @@ class ArduControl():
             self.motorB_brake.write(1)
 
     def haltMotor(self, motorA=None, motorB=None):
+        """
+        Stops a given motor, and all processes related to it
+        """
         if motorA:
             if self._motorA_pos_process and \
                self._motorA_pos_process.is_alive():
@@ -101,6 +121,9 @@ class ArduControl():
             self.motorSpeed(motorB=0)
 
     def motorSpeed(self, motorA=None, motorB=None):
+        """
+        Sets motor to the given speed.  value must be between 0 and 1
+        """
         if motorA is not None:
             self.motorA_speed.write(motorA)
 
@@ -108,6 +131,9 @@ class ArduControl():
             self.motorB_speed.write(motorB)
 
     def motorDirection(self, motorA=None, motorB=None):
+        """
+        sets the direction of the motor to given value
+        """
         if motorA is not None:
             self.motorA_direction.write(motorA)
 
@@ -115,6 +141,9 @@ class ArduControl():
             self.motorB_direction.write(motorB)
 
     def motorDirectionToggle(self, motorA=None, motorB=None):
+        """
+        Switches the direction of the given motor
+        """
         if motorA:
             self.motorA_direction.write(not self.motorA_direction.read())
         if motorB:
@@ -146,7 +175,7 @@ class ArduControl():
 
     def motorAWorker(self, goto_pos):
         """
-        Worker function for thread gotoPosition
+        Worker function for process gotoPosition
         """
         while True:
             phy_pos = (self.encoder.getPositions()[0])
@@ -172,6 +201,9 @@ class ArduControl():
         self._motorA_newpos.clear()
 
     def motorBWorker(self, goto_pos):
+        """
+        Worker function as a target for the motorB part of gotoPosition
+        """
         while True:
             phy_pos = (self.encoder.getPositions()[1])
             self.motorDirection(motorA=int(goto_pos < phy_pos))
@@ -204,7 +236,9 @@ class Position(Structure):
 
 
 class Encoder(Process):
-
+    """
+    Python API for using an arduino as a Quad-encoder
+    """
     def __init__(self, serial_ext, clicks_per_rev):
         Process.__init__(self)
         self.revolutions = 0
@@ -224,9 +258,16 @@ class Encoder(Process):
         self.start()
 
     def convertPositionStdToTicks(self, position):
+        """
+        Converts a standard position of form (revs, counts) to
+        ticks, just the number of ticks an encoder has logged
+        """
         return position[0]*self.clicks_per_rev + position[1]
 
     def convertPositionTicksToStd(self, position):
+        """
+        Converts a tick count to standard position of form (revs, counts)
+        """
         return (position / self.clicks_per_rev, position % clicks_per_rev)
 
     def run(self):
@@ -251,6 +292,5 @@ class Encoder(Process):
         API function so the user doesn't have to
         deal with weird ctype_arrays
         """
-
         retVal = [(motor.revs, motor.counts) for motor in self.positions]
         return retVal
