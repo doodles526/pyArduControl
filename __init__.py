@@ -13,7 +13,7 @@ class ArduControl():
     Python library/API for controlling arduino motorcontrollers
     over USB serial connection.
     """
-    def __init__(self, extension, control_board=None, encoder_board=None):
+    def __init__(self, extension, encoder_board=None):
         if control_board is not None:
             self.board = control_board
         else:
