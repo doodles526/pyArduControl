@@ -250,7 +250,7 @@ class Encoder(Process):
             self.ser.readline()
 
         # may need to look this over again on tuesday. but have it here for now
-        while not re.match(r"[-]?\d*[,][-]?\d*", ser.readline()):
+        while not re.match(r"[-]?\d*[,][-]?\d*", self.ser.readline()):
             pass
         self.numMotors = len(self.ser.readline().split(';')[:-1])
         self.positions = Array(Position,
@@ -278,7 +278,6 @@ class Encoder(Process):
             temp_positions = list()
             positions_counter = 0
             for motor in motors:
-                print motor
                 # regex to filter bad data packets
                 if re.match(r"[-]?\d*[,][-]?\d*", motor):
                     self.positions[positions_counter].revs = \
