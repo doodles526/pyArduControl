@@ -247,7 +247,7 @@ class Encoder(Process):
         self._posLock = Lock()
         self.ser = serial.Serial(serial_ext)
         for i in range(15):
-            ser.readline()
+            self.ser.readline()
 
         # may need to look this over again on tuesday. but have it here for now
         while not re.match(r"[-]?\d*[,][-]?\d*", ser.readline()):
