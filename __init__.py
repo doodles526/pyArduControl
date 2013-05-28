@@ -172,15 +172,29 @@ class ArduControl():
         self._motorA_newpos.clear()
 
     def motorBWorker(self, goto_pos):
-        while not self._motorB_newpos.isSet():
-            self._motorB_hold.wait()
-            self.motorDirection(motorA=int(goto_pos-phys_pos > 0))
-            p_vel = self.p_gain * (abs((goto_pos[0]*1856 + goto_pos[1]) -
-                                       (phy_pos[0]*1856 + phy_pos[1])))
+        while True:
+            phy_pos = (self.encoder.getPositions()[1])
+            self.motorDirection(motorA=int(goto_pos < phy_pos))
+            p_vel = self.p_gain * ((goto_pos[0]*464 + goto_pos[1]) -
+                                   (phy_pos[0]*464 + phy_pos[1]))
             d_vel = self.d_gain * self.motorB_speed.read()
-            vel = p_vel
-            self.motorSpeed(motorB=vel)
+            if self.motorB_direction.read() == 1:
+                d_vel = -d_vel
+            vel = p_vel - d_vel
+
+            if vel == abs(vel):
+                self.motorDirection(motorB=0)
+            else:
+                self.motorDirection(motorB=1)
+            vel = abs(vel)
+
+            if vel > 1:
+                vel = 1
+
+            if self.motorB_speed.read() != vel:
+                self.motorSpeed(motorB=vel)
         self._motorB_newpos.clear()
+
 
 
 class Position(Structure):
