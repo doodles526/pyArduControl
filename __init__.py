@@ -196,7 +196,6 @@ class ArduControl():
         self._motorB_newpos.clear()
 
 
-
 class Position(Structure):
     """
     Setup process-safe position list of tuples
