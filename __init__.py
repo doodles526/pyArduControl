@@ -72,8 +72,8 @@ class ArduControl():
 
         self.trigger_time_constant = .5
 
-        self.p_gain = .01
-        self.d_gain = 2
+        self.p_gain = .03
+        self.d_gain = 5.2
 
         self.encoder = encoder_board
         self.motorSpeed(0, 0)
@@ -150,6 +150,8 @@ class ArduControl():
         Sets motor to the given speed.  value must be between 0 and 1
         """
         if motorA is not None:
+            if motorA < .6 and motorA != 0:
+                motorA = .6
             self.motorA_speed.write(motorA)
 
         if motorB is not None:
