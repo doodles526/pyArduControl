@@ -22,6 +22,19 @@ class MotorProcess(Process):
         while not self.exit.is_set():
             self.control_funct(self.location)
 
+class TriggerProcess(Process):
+    def __init__(self, trigger_funct, num_fire):
+        Process.__init__(self)
+        self.exit = Event()
+        self.trigger_funct = trigger_funct
+        self.num_fire = num_fire
+
+    def shutdown(self):
+        self.exit.set()
+
+    def run(self):
+        while not self.exit.is_set:
+            self.trigger_funct(num_fire)
 
 class ArduControl():
     """
@@ -73,19 +86,19 @@ class ArduControl():
         """
         if triggerA is not None:
             if self._triggerA_process:
-                self._triggerA_process.terminate()
+                self._triggerA_process.shutdown()
                 while self._triggerA_process.is_alive():
                     pass
-            self._triggerA_process = Process(target=self.triggerAWorker,
-                                             args=(triggerA,))
+            self._triggerA_process = TriggerProcess(self.triggerAWorker,
+                                                    triggerA)
             self._triggerA_process.start()
         if triggerB is not None:
             if self._triggerB_process:
-                self._triggerB_process.terminate()
+                self._triggerB_process.shutdown()
                 while self._triggerB_process.is_alive():
                     pass
-            self._triggerB_process = Process(target=self.triggerBWorker,
-                                             args=(triggerA,))
+            self._triggerB_process = TriggerProcess(self.triggerBWorker,
+                                                    triggerA)
             self._triggerB_process.start()
 
     def triggerAWorker(self, num_fire):
