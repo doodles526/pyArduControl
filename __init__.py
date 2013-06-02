@@ -266,7 +266,7 @@ class Encoder(Process):
         Process.__init__(self)
         self.revolutions = 0
         self.clicks = 0
-        self.click_per_rev = clicks_per_rev
+        self.clicks_per_rev = clicks_per_rev
         self._posLock = Lock()
         self.ser = serial.Serial(serial_ext)
         for i in range(15):
@@ -291,7 +291,7 @@ class Encoder(Process):
         """
         Converts a tick count to standard position of form (revs, counts)
         """
-        return (position / self.clicks_per_rev, position % clicks_per_rev)
+        return (position / self.clicks_per_rev, position % self.clicks_per_rev)
 
     def run(self):
         while True:
