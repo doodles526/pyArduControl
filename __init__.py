@@ -59,9 +59,9 @@ class ArduControl():
         self._triggerB_process = None
 
         self.triggerA = self.board.digital[6]
-        self.triggerB = self.board.digital[7]
+        self.triggerB = self.board.digital[10]
 
-        self.board.servo_config(pin=9,
+        self.board.servo_config(pin=6,
                                 min_pulse=600,
                                 max_pulse=2400,
                                 angle=35)
