@@ -70,7 +70,7 @@ class ArduControl():
                                 max_pulse=2400,
                                 angle=145)
 
-        self.trigger_time_constant = .5
+        self.trigger_time_constant = .5 * .2
 
         self.p_gain = .03
         self.d_gain = 5.2
