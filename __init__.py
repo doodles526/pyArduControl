@@ -100,7 +100,7 @@ class ArduControl():
                 while self._triggerB_process.is_alive():
                     pass
             self._triggerB_process = TriggerProcess(self.triggerBWorker,
-                                                    triggerA)
+                                                    triggerB)
             self._triggerB_process.start()
 
     def triggerAWorker(self, num_fire):
