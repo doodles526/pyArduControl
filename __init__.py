@@ -22,6 +22,7 @@ class MotorProcess(Process):
         while not self.exit.is_set():
             self.control_funct(self.location)
 
+
 class TriggerProcess(Process):
     def __init__(self, trigger_funct, num_fire):
         Process.__init__(self)
@@ -35,6 +36,7 @@ class TriggerProcess(Process):
     def run(self):
         while not self.exit.is_set:
             self.trigger_funct(self.num_fire)
+
 
 class ArduControl():
     """
