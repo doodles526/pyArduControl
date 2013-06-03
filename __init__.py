@@ -34,7 +34,7 @@ class TriggerProcess(Process):
 
     def run(self):
         while not self.exit.is_set:
-            self.trigger_funct(num_fire)
+            self.trigger_funct(self.num_fire)
 
 class ArduControl():
     """
