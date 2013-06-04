@@ -60,10 +60,6 @@ void loop()
    lastEncode1 = encoder1Pos;
    Serial.print(String(String(revolutions0, DEC) + String(",") + String(encoder0Pos, DEC) + String(";")));
    Serial.print(String(String(revolutions1, DEC) + String(",") + String(encoder1Pos, DEC) + String(";\n")));
-
-   //Serial.print(",");
-   //Serial.print(encoder0Pos, DEC);
-   //Serial.print(";\n");
  }
  timeout++;
 }
