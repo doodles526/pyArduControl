@@ -9,6 +9,9 @@ import re
 
 
 class MotorProcess(Process):
+    """
+    Process helper class for motor control allows for graceful exit
+    """
     def __init__(self, control_funct, location):
         Process.__init__(self)
         self.exit = Event()
@@ -24,6 +27,9 @@ class MotorProcess(Process):
 
 
 class TriggerProcess(Process):
+    """
+    Process helper class for triggering allows for graceful exit
+    """
     def __init__(self, trigger_funct, num_fire):
         Process.__init__(self)
         self.exit = Event()
