@@ -26,6 +26,9 @@ volatile unsigned int timeout = 0;
 
 void setup() 
 {
+  while(timeout < 60000)  {
+    timeout ++;
+  }
   pinMode(encoder0PinA, INPUT);
   //turn on pullup resistor
   //digitalWrite(encoder0PinA, HIGH); //ONLY FOR SOME ENCODER(MAGNETIC)!!!! 
@@ -52,7 +55,7 @@ void setup()
 void loop()
 {  
  //your staff....ENJOY! :D
- if(revolutions0 != lastRevs0 || encoder0Pos != lastEncode0 || revolutions1 != lastRevs1 || encoder1Pos != lastEncode1 || timeout > 60000)  {
+ if(revolutions0 != lastRevs0 || encoder0Pos != lastEncode0 || revolutions1 != lastRevs1 || encoder1Pos != lastEncode1 || timeout > 6000)  {
    timeout = 0;
    lastRevs0 = revolutions0;
    lastEncode0 = encoder0Pos;
@@ -98,7 +101,7 @@ void doEncoderA1()
      }
 
      if (revolutions1 > 0 && encoder1Pos < 0 )  {
-       revolutions0 --;
+       revolutions1 --;
        encoder1Pos = 464 - encoder1Pos;
      }
      else if (revolutions1 < 0 && encoder1Pos > 0)  {

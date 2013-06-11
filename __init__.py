@@ -12,21 +12,21 @@ class MotorProcess(Process):
     """
     Process helper class for motor control allows for graceful exit
     """
-    def __init__(self, control_funct, location):
+    def __init__(self, control_functA, control_functB, locationA, locationB):
         Process.__init__(self)
         self.exit = Event()
-        self.control_funct = control_funct
-        self.location = Position(location[0], location[1])
+        self.control_functA = control_functA
+        self.control_functB = control_functB
 
-    def newPosition(self, pos):
-        self.location = pos
-        print self.location 
+        self.locationA = Position(locationA[0], locationA[1])
+        self.locationB = Position(locationB[0], locationB[1])
     def shutdown(self):
         self.exit.set()
 
     def run(self):
         while not self.exit.is_set():
-            self.control_funct((self.location.revs, self.location.counts))
+            self.control_functA((self.locationA.revs, self.locationA.counts))
+            self.control_functB((self.locationB.revs, self.locationB.counts))
 
 class TriggerProcess(Process):
     """
@@ -53,8 +53,7 @@ class ArduControl():
     def __init__(self, extension, encoder_board=None):
         self.board = pyfirmata.Arduino(extension)
 
-        self._motorA_pos_process = None
-        self._motorB_pos_process = None
+        self._motor_pos_process = None
 
         self.motorA_speed = self.board.get_pin("d:3:p")
         self.motorA_direction = self.board.get_pin("d:12:o")
@@ -79,7 +78,7 @@ class ArduControl():
         self.board.servo_config(pin=10,
                                 min_pulse=600,
                                 max_pulse=2400,
-                                angle=145)
+                                angle=0)
 
         self.trigger_time_constant = .5 * .2
 
@@ -132,14 +131,46 @@ class ArduControl():
         should probably be abandoned for production.  But is fine for now.
         """
         self.control_lock.acquire()
-        self.triggerB.write(180)
+        self.triggerB.write(30)
         self.control_lock.release()
-        time.sleep(num_fire * self.trigger_time_constant * 2)
+        time.sleep(num_fire * self.trigger_time_constant * 3)
         self.control_lock.acquire()
-        self.triggerB.write(155)
+        self.triggerB.write(0)
         self.control_lock.release()
         time.sleep(num_fire * self.trigger_time_constant * 2)
+    
+    def triggerAOpen(self):
+        if self._triggerA_process:
+            if self._triggerA_process.is_alive():
+                self._triggerA_process.shutdown()
+                while self._triggerA_process.is_alive():
+                    pass
+        self.triggerA.write(0)
+    def triggerAClose(self):
+        if self._triggerA_process:
+            if self._triggerA_process.is_alive():
+                self._triggerA_process.shutdown()
+                while self._triggerA_process.is_alive():
+                    pass
         
+        self.triggerA.write(25)
+    def triggerBOpen(self):
+        if self._triggerB_process:
+            if self._triggerB_process.is_alive():
+                self._triggerB_process.shutdown()
+                while self._triggerB_process.is_alive():
+                    pass
+        self.triggerB.write(30)
+    def triggerBClose(self):
+        if self._triggerB_process:
+            if self._triggerB_process.is_alive():
+                self._triggerB_process.shutdown()
+                while self._triggerB_process.is_alive():
+                    pass
+        
+
+        self.triggerB.write(0)
+     
     def brake(self, motorA=None, motorB=None):
         """
         Uses braking functionality given in some arduino motor drivers
@@ -158,18 +189,14 @@ class ArduControl():
         """
         Stops a given motor, and all processes related to it
         """
-        if motorA:
-            if self._motorA_pos_process and \
-               self._motorA_pos_process.is_alive():
-                self._motorA_pos_process.shutdown()
-            self.motorSpeed(motorA=1)
-            self.motorSpeed(motorA=0)
-        if motorB:
-            if self._motorB_pos_process and \
-               self._motorB_pos_process.is_alive():
-                self._motorB_pos_process.shutdown()
-            self.motorSpeed(motorB=1)
-            self.motorSpeed(motorB=0)
+        if self._motor_pos_process and self._motor_pos_process.is_alive():
+            self._motor_pos_process.shutdown()
+            while self._motor_pos_process.is_alive():
+                pass
+        self.motorSpeed(motorA=1)
+        self.motorSpeed(motorA=0)
+        self.motorSpeed(motorB=1)
+        self.motorSpeed(motorB=0)
 
     def motorSpeed(self, motorA=None, motorB=None):
         """
@@ -217,32 +244,26 @@ class ArduControl():
         This takes a tuple of (revs, counts)
         Requires an encoder to function
         """
+        
+        if motorA is None:
+            motorA = self.encoder.getPositions()[0]
+        if motorB is None:
+            motorB = self.encoder.getPositions()[1]
 
-        if motorA:
-            if self._motorA_pos_process:
-                if self._motorA_pos_process.is_alive():
-                    self._motorA_pos_process.newPosition(motorA)
-                else:
-                    self._motorA_pos_process = MotorProcess(self.motorAWorker,
-                                                    motorA)
-                    self._motorA_pos_process.start()
-            else:
-                self._motorA_pos_process = MotorProcess(self.motorAWorker,
-                                                    motorA)
-                self._motorA_pos_process.start()
+        if self._motor_pos_process:
+            if self._motor_pos_process.is_alive():
+                self._motor_pos_process.shutdown()
+                while self._motor_pos_process.is_alive():
+                    pass
+               
+            self._motor_pos_process = MotorProcess(self.motorAWorker, self.motorBWorker,
+                                                motorA, motorB)
+            self._motor_pos_process.start()
+        else:
+            self._motor_pos_process = MotorProcess(self.motorAWorker, self.motorBWorker,
+                                                motorA, motorB)
+            self._motor_pos_process.start()
 
-        if motorB:
-            if self._motorB_pos_process:
-                if self._motorB_pos_process.is_alive():
-                    self._motorB_pos_process.newPosition(motorB)
-                else:    
-                    self._motorB_pos_process = MotorProcess(self.motorBWorker,
-                                                    motorB)
-                    self._motorB_pos_process.start()
-            else:
-                    self._motorB_pos_process = MotorProcess(self.motorBWorker,
-                                                    motorB)
-                    self._motorB_pos_process.start()
 
     def motorAWorker(self, goto_pos):
         """
@@ -263,7 +284,7 @@ class ArduControl():
         else:
             self.motorDirection(1)
         vel = abs(vel)
-        
+         
         if vel > 1:
             vel = 1
         self.control_lock.acquire() 
@@ -344,8 +365,10 @@ class Encoder(Process):
         """
         Converts a tick count to standard position of form (revs, counts)
         """
-        return (position / self.clicks_per_rev, position % self.clicks_per_rev)
-
+        if position == abs(position):
+            return (position / self.clicks_per_rev, position % self.clicks_per_rev)
+        else:
+            return (-(position / -self.clicks_per_rev), position % -self.clicks_per_rev)
     def run(self):
         dt = .001
         start = time.time()
