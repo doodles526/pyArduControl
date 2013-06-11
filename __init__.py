@@ -197,20 +197,29 @@ class ArduControl():
 
         if motorA:
             if self._motorA_pos_process:
-                self._motorA_pos_process.shutdown()
-                while self._motorA_pos_process.is_alive():
-                    pass
-            self._motorA_pos_process = MotorProcess(self.motorAWorker,
+                if self._motorA_pos_process.is_alive():
+                    self._motorA_pos_process.newPosition(motorA)
+                else:
+                    self._motorA_pos_process = MotorProcess(self.motorAWorker,
                                                     motorA)
-            self._motorA_pos_process.start()
+                    self._motorA_pos_process.start()
+            else:
+                self._motorA_pos_process = MotorProcess(self.motorAWorker,
+                                                    motorA)
+                self._motorA_pos_process.start()
+
         if motorB:
             if self._motorB_pos_process:
-                self._motorB_pos_process.shutdown()
-                while self._motorB_pos_process.is_alive():
-                    pass
-            self._motorB_pos_process = MotorProcess(self.motorBWorker,
+                if self._motorB_pos_process.is_alive():
+                    self._motorB_pos_process.newPosition(motorB)
+                else:    
+                    self._motorB_pos_process = MotorProcess(self.motorBWorker,
                                                     motorB)
-            self._motorB_pos_process.start()
+                    self._motorB_pos_process.start()
+            else:
+                    self._motorB_pos_process = MotorProcess(self.motorBWorker,
+                                                    motorB)
+                    self._motorB_pos_process.start()
 
     def motorAWorker(self, goto_pos):
         """
@@ -220,7 +229,7 @@ class ArduControl():
         self.motorDirection(motorA=int(goto_pos < phy_pos))
         p_vel = self.p_gain * ((goto_pos[0]*464 + goto_pos[1]) -
                                (phy_pos[0]*464 + phy_pos[1]))
-        d_vel = self.d_gain * self.motorA_speed.read()
+        d_vel = self.d_gain * self.encoder.getVelocities()[0]
         if self.motorA_direction.read() == 1:
             d_vel = -d_vel
         vel = p_vel - d_vel
@@ -245,7 +254,7 @@ class ArduControl():
         self.motorDirection(motorA=int(goto_pos < phy_pos))
         p_vel = self.p_gain * ((goto_pos[0]*464 + goto_pos[1]) -
                                (phy_pos[0]*464 + phy_pos[1]))
-        d_vel = self.d_gain * self.motorB_speed.read()
+        d_vel = self.d_gain * self.encoder.getVelocities()[1]
         if self.motorB_direction.read() == 1:
             d_vel = -d_vel
         vel = p_vel - d_vel
@@ -290,6 +299,7 @@ class Encoder(Process):
         self.numMotors = len(self.ser.readline().split(';')[:-1])
         self.positions = Array(Position,
                                [(i, i)for i in range(self.numMotors)])
+        self.velocities = Array('d', 2)
         self.start()
 
     def convertPositionStdToTicks(self, position):
@@ -306,12 +316,23 @@ class Encoder(Process):
         return (position / self.clicks_per_rev, position % self.clicks_per_rev)
 
     def run(self):
+        dt = .001
+        start = time.time()
+        oldpos = [0, 0]
         while True:
+            currentTime = time.time()
+            if currentTime - start >= dt:
+                tickPos = [self.convertPositionStdToTicks((i.revs, i.counts)) for i in self.positions]
+                self.velocities[0] = (abs(oldpos[0] - tickPos[0]) / (currentTime - start))
+                self.velocities[1] = (abs(oldpos[1] - tickPos[1]) / (currentTime - start))
+                oldpos = [self.convertPositionStdToTicks((i.revs, i.counts)) for i in self.positions]
+                start = time.time()
             motors = self.ser.readline()
             motors = motors.split("\n")[0]
             motors = motors.split(';')[:-1]
             temp_positions = list()
             positions_counter = 0
+            
             for motor in motors:
                 # regex to filter bad data packets
                 if re.match(r"[-]?\d*[,][-]?\d*", motor):
@@ -320,6 +341,12 @@ class Encoder(Process):
                     self.positions[positions_counter].counts = \
                         int(motor.split(',')[1])
                 positions_counter += 1
+    def getVelocities(self):
+        """
+        API function so we don't have to deal with c-types
+        """
+        retVal = [i for i in self.velocities]
+        return retVal
 
     def getPositions(self):
         """
