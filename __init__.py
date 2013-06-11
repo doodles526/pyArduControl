@@ -161,13 +161,13 @@ class ArduControl():
         if motorA:
             if self._motorA_pos_process and \
                self._motorA_pos_process.is_alive():
-                self._motorA_pos_process.terminate()
+                self._motorA_pos_process.shutdown()
             self.motorSpeed(motorA=1)
             self.motorSpeed(motorA=0)
         if motorB:
             if self._motorB_pos_process and \
                self._motorB_pos_process.is_alive():
-                self._motorB_pos_process.terminate()
+                self._motorB_pos_process.shutdown()
             self.motorSpeed(motorB=1)
             self.motorSpeed(motorB=0)
 
