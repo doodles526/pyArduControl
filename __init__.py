@@ -278,7 +278,6 @@ class Position(Structure):
     """
     _fields_ = [('revs', c_long), ('counts', c_long)]
 
-
 class Encoder(Process):
     """
     Python API for using an arduino as a Quad-encoder
