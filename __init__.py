@@ -162,8 +162,6 @@ class ArduControl():
         Sets motor to the given speed.  value must be between 0 and 1
         """
         if motorA is not None:
-            if motorA < .6 and motorA != 0:
-                motorA = .6
             self.motorA_speed.write(motorA)
 
         if motorB is not None:
