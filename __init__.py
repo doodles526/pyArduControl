@@ -154,6 +154,7 @@ class ArduControl():
             if self._motorB_pos_process and \
                self._motorB_pos_process.is_alive():
                 self._motorB_pos_process.terminate()
+            self.motorSpeed(motorB=1)
             self.motorSpeed(motorB=0)
 
     def motorSpeed(self, motorA=None, motorB=None):
