@@ -69,6 +69,8 @@ class ArduControl():
 
         self.triggerA = self.board.digital[6]
         self.triggerB = self.board.digital[10]
+        
+        self.control_lock = Lock()
 
         self.board.servo_config(pin=6,
                                 min_pulse=600,
@@ -115,30 +117,42 @@ class ArduControl():
         Worker function for fire.  This is specialized for crossfire, and
         should probably be abandoned for production.  But is fine for now.
         """
+        self.control_lock.acquire()
         self.triggerA.write(0)
+        self.control_lock.release()
         time.sleep(num_fire * self.trigger_time_constant * 2)
+        self.control_lock.acquire()
         self.triggerA.write(25)
+        self.control_lock.release()
         time.sleep(num_fire * self.trigger_time_constant * 2)
-    
+
     def triggerBWorker(self, num_fire):
         """
         Worker function for fire.  This is specialized for crossfire, and
         should probably be abandoned for production.  But is fine for now.
         """
+        self.control_lock.acquire()
         self.triggerB.write(180)
+        self.control_lock.release()
         time.sleep(num_fire * self.trigger_time_constant * 2)
+        self.control_lock.acquire()
         self.triggerB.write(155)
+        self.control_lock.release()
         time.sleep(num_fire * self.trigger_time_constant * 2)
-    
+        
     def brake(self, motorA=None, motorB=None):
         """
         Uses braking functionality given in some arduino motor drivers
         """
         if motorA is not None:
+            self.control_lock.acquire()
             self.motorA_brake.write(1)
+            self.control_lock.release()
 
         if motorB is not None:
+            self.control_lock.acquire()
             self.motorB_brake.write(1)
+            self.control_lock.release()
 
     def haltMotor(self, motorA=None, motorB=None):
         """
@@ -162,29 +176,40 @@ class ArduControl():
         Sets motor to the given speed.  value must be between 0 and 1
         """
         if motorA is not None:
+            self.control_lock.acquire()
             self.motorA_speed.write(motorA)
-
+            self.control_lock.release()
         if motorB is not None:
+            self.control_lock.acquire()
             self.motorB_speed.write(motorB)
+            self.control_lock.release()
 
     def motorDirection(self, motorA=None, motorB=None):
         """
         sets the direction of the motor to given value
         """
         if motorA is not None:
+            self.control_lock.acquire()
             self.motorA_direction.write(motorA)
+            self.control_lock.release()
 
         if motorB is not None:
+            self.control_lock.acquire()
             self.motorB_direction.write(motorB)
+            self.control_lock.release()
 
     def motorDirectionToggle(self, motorA=None, motorB=None):
         """
         Switches the direction of the given motor
         """
         if motorA:
+            self.control_lock.acquire()
             self.motorA_direction.write(not self.motorA_direction.read())
+            self.control_lock.release()
         if motorB:
+            self.control_lock.acquire()
             self.motorB_direction.write(not self.motorB_direction.read())
+            self.control_lock.release()
 
     def gotoPosition(self, motorA=None, motorB=None):
         """
@@ -228,20 +253,23 @@ class ArduControl():
         p_vel = self.p_gain * ((goto_pos[0]*464 + goto_pos[1]) -
                                (phy_pos[0]*464 + phy_pos[1]))
         d_vel = self.d_gain * self.encoder.getVelocities()[0]
+        self.control_lock.acquire()
         if self.motorA_direction.read() == 1:
             d_vel = -d_vel
+        self.control_lock.release()
         vel = p_vel - d_vel
-
         if vel == abs(vel):
             self.motorDirection(0)
         else:
             self.motorDirection(1)
         vel = abs(vel)
-
+        
         if vel > 1:
             vel = 1
-
-        if self.motorA_speed.read() != vel:
+        self.control_lock.acquire() 
+        curSpeed = self.motorA_speed.read()
+        self.control_lock.release()
+        if curSpeed != vel:
             self.motorSpeed(motorA=vel)
 
     def motorBWorker(self, goto_pos):
@@ -253,9 +281,12 @@ class ArduControl():
         p_vel = self.p_gain * ((goto_pos[0]*464 + goto_pos[1]) -
                                (phy_pos[0]*464 + phy_pos[1]))
         d_vel = self.d_gain * self.encoder.getVelocities()[1]
+        self.control_lock.acquire()
         if self.motorB_direction.read() == 1:
             d_vel = -d_vel
+        self.control_lock.release()
         vel = p_vel - d_vel
+        
 
         if vel == abs(vel):
             self.motorDirection(motorB=0)
@@ -265,10 +296,13 @@ class ArduControl():
 
         if vel > 1:
             vel = 1
-
-        if self.motorB_speed.read() != vel:
+        
+        self.control_lock.acquire()
+        curVel = self.motorB_speed.read()
+        self.control_lock.release()
+        if curVel != vel:
             self.motorSpeed(motorB=vel)
-
+        
 
 class Position(Structure):
     """
