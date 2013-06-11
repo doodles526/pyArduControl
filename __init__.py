@@ -16,15 +16,17 @@ class MotorProcess(Process):
         Process.__init__(self)
         self.exit = Event()
         self.control_funct = control_funct
-        self.location = location
+        self.location = Position(location[0], location[1])
 
+    def newPosition(self, pos):
+        self.location = pos
+        print self.location 
     def shutdown(self):
         self.exit.set()
 
     def run(self):
         while not self.exit.is_set():
-            self.control_funct(self.location)
-
+            self.control_funct((self.location.revs, self.location.counts))
 
 class TriggerProcess(Process):
     """
