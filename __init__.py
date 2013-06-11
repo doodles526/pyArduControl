@@ -42,8 +42,7 @@ class TriggerProcess(Process):
         self.exit.set()
 
     def run(self):
-        while not self.exit.is_set:
-            self.trigger_funct(self.num_fire)
+        self.trigger_funct(self.num_fire)
 
 
 class ArduControl():
@@ -117,18 +116,20 @@ class ArduControl():
         should probably be abandoned for production.  But is fine for now.
         """
         self.triggerA.write(0)
-        time.sleep(num_fire * self.trigger_time_constant)
+        time.sleep(num_fire * self.trigger_time_constant * 2)
         self.triggerA.write(25)
-
+        time.sleep(num_fire * self.trigger_time_constant * 2)
+    
     def triggerBWorker(self, num_fire):
         """
         Worker function for fire.  This is specialized for crossfire, and
         should probably be abandoned for production.  But is fine for now.
         """
         self.triggerB.write(180)
-        time.sleep(num_fire * self.trigger_time_constant)
+        time.sleep(num_fire * self.trigger_time_constant * 2)
         self.triggerB.write(155)
-
+        time.sleep(num_fire * self.trigger_time_constant * 2)
+    
     def brake(self, motorA=None, motorB=None):
         """
         Uses braking functionality given in some arduino motor drivers
