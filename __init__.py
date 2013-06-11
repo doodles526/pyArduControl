@@ -81,8 +81,8 @@ class ArduControl():
 
         self.trigger_time_constant = .5 * .2
 
-        self.p_gain = .03
-        self.d_gain = 5.2
+        self.p_gain = .014
+        self.d_gain = .0052
 
         self.encoder = encoder_board
         self.motorSpeed(0, 0)
