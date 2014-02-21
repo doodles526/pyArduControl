@@ -3,7 +3,7 @@ from pyfirmata import Arduino, util
 import serial
 import time
 from multiprocessing import Process, Lock, Event
-from multiprocessing.sharedctypes import Array
+from multiprocessing.sharedctypes import Array, Value
 from ctypes import Structure, c_long
 import re
 
@@ -342,6 +342,7 @@ class Encoder(Process):
         self.clicks_per_rev = clicks_per_rev
         self._posLock = Lock()
         self.ser = serial.Serial(serial_ext)
+        self.gameState = Value('i', 1)
         for i in range(15):
             self.ser.readline()
 
@@ -383,6 +384,7 @@ class Encoder(Process):
                 start = time.time()
             motors = self.ser.readline()
             motors = motors.split("\n")[0]
+            self.gameState.value = int(motors.split(';')[-1])
             motors = motors.split(';')[:-1]
             temp_positions = list()
             positions_counter = 0
@@ -401,6 +403,9 @@ class Encoder(Process):
         """
         retVal = [i for i in self.velocities]
         return retVal
+
+    def isGameGoing(self):
+        return not self.gameState.value
 
     def getPositions(self):
         """
